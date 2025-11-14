@@ -15,7 +15,6 @@ export const loginSchema = t.Object({
 export const registResponse = t.Object({
   success: t.Boolean(),
   data: t.Object({
-    id: t.String(),
     email: t.String(),
     name: t.String(),
   }),
