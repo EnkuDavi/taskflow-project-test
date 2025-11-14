@@ -1,10 +1,9 @@
 import { Elysia } from 'elysia'
-import { createTaskSchema, taskDeleteResponse, taskPaginatedResponse, taskResponse, updateTaskSchema } from './schema'
+import { createTaskSchema, taskDeleteResponse, taskPaginatedResponse, taskQuerySchema, taskResponse, updateTaskSchema } from './schema'
 import { TaskService } from './service'
 import { requireUser } from '../../common/auth-middleware'
 import { prisma } from '../../plugins/prisma'
 import { success } from '../../common/success'
-import { paginationQuerySchema } from '../../common/pagination'
 
 export const taskRoute = new Elysia({ prefix: "/tasks" })
   .derive(requireUser)
@@ -17,7 +16,7 @@ export const taskRoute = new Elysia({ prefix: "/tasks" })
       return success(result);
     },
     { 
-      query: paginationQuerySchema,
+      query: taskQuerySchema,
       response: taskPaginatedResponse
     }
   )

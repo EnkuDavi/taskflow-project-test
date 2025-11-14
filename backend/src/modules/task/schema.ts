@@ -1,5 +1,5 @@
 import { Static, t } from "elysia";
-import { paginationMetaSchema } from "../../common/pagination";
+import { paginationMetaSchema, paginationQuerySchema } from "../../common/pagination";
 
 export const createTaskSchema = t.Object({
   title: t.String(),
@@ -21,6 +21,13 @@ export const updateTaskSchema = t.Object({
 });
 
 export type UpdateTaskDto = Static<typeof updateTaskSchema>;
+
+export const taskQuerySchema = t.Object({
+  ...paginationQuerySchema.properties,
+  status: t.Optional(t.Enum({ pending: "pending", in_progress: "in_progress", completed: "completed" })), 
+});
+
+export type TaskQuerySchemaDto = Static<typeof taskQuerySchema>;
 
 
 // Sample response swagger 

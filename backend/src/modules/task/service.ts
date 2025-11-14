@@ -1,19 +1,23 @@
-import type { PrismaClient } from "@prisma/client";
+import type { Prisma, PrismaClient } from "@prisma/client";
 import { AppError } from "../../common/error";
-import { CreateTaskDto, UpdateTaskDto } from "./schema";
-import { PaginationQueryDto } from "../../common/pagination";
+import { CreateTaskDto, TaskQuerySchemaDto, UpdateTaskDto } from "./schema";
 import { paginate } from "../../common/paginate";
 
 export class TaskService {
   constructor(private prisma: PrismaClient) {}
 
-  async list(userId: string, query: PaginationQueryDto) {
+  async list(userId: string, query: TaskQuerySchemaDto) {
+    const where: Prisma.TaskWhereInput = {
+      userId,
+      ...(query.status && { status: query.status }),
+    };
+
     return await paginate(this.prisma.task, query, {
-      where: { userId },
+      where,
       orderBy: { createdAt: "desc" },
       search: {
-            fields: ["title", "description"]
-        }
+        fields: ["title", "description"],
+      },
     });
   }
 
