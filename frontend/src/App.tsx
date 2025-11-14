@@ -75,6 +75,7 @@ function App() {
 
   const handleLogout = () => {
     localStorage.removeItem('token')
+    setTasks([])
     setIsAuthenticated(false)
     setCurrentView('login')
   }
