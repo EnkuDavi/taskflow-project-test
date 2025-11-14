@@ -30,8 +30,8 @@ export const taskItemSchema = t.Object({
   description: t.Nullable(t.String()),
   status: t.String(),
   userId: t.String(),
-  createdAt: t.String(),
-  updatedAt: t.String(),
+  createdAt: t.Date(),
+  updatedAt: t.Date(),
 });
 
 export const taskResponse = t.Object({
