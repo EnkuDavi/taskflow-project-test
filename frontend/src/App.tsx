@@ -36,6 +36,9 @@ function App() {
   const [inProgressTotal, setInProgressTotal] = useState(0)
   const [completedTotal, setCompletedTotal] = useState(0)
   const [loading, setLoading] = useState(false)
+  const [editingTask, setEditingTask] = useState<Task | null>(null)
+  const [editTitle, setEditTitle] = useState('')
+  const [editDescription, setEditDescription] = useState('')
 
   const handleLogin = async (email: string, password: string) => {
     try {
@@ -293,6 +296,40 @@ function App() {
     }
   }
 
+  const openEditModal = (task: Task) => {
+    setEditingTask(task)
+    setEditTitle(task.title)
+    setEditDescription(task.description || '')
+  }
+
+  const closeEditModal = () => {
+    setEditingTask(null)
+    setEditTitle('')
+    setEditDescription('')
+  }
+
+  const updateTask = async () => {
+    if (!editingTask || !editTitle.trim()) return
+    
+    try {
+      const response = await apiRequest(`${API_BASE_URL}/tasks/${editingTask.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          title: editTitle.trim(),
+          description: editDescription.trim() || undefined
+        })
+      })
+      
+      const data = await response.json()
+      if (data.success) {
+        closeEditModal()
+        fetchAllTasks(searchQuery)
+      }
+    } catch (error) {
+      console.error('Error updating task:', error)
+    }
+  }
+
   if (currentView === 'login') {
     return (
       <Login 
@@ -359,6 +396,9 @@ function App() {
                   <small className="task-date">{new Date(task.createdAt).toLocaleDateString()}</small>
                 </div>
                 <div className="card-actions">
+                  <button onClick={() => openEditModal(task)} className="edit-btn">
+                    Edit
+                  </button>
                   <button onClick={() => updateTaskStatus(task.id, 'in_progress')} className="progress-btn">
                     Start
                   </button>
@@ -393,6 +433,9 @@ function App() {
                   <small className="task-date">{new Date(task.createdAt).toLocaleDateString()}</small>
                 </div>
                 <div className="card-actions">
+                  <button onClick={() => openEditModal(task)} className="edit-btn">
+                    Edit
+                  </button>
                   <button onClick={() => updateTaskStatus(task.id, 'completed')} className="complete-btn">
                     Complete
                   </button>
@@ -430,6 +473,9 @@ function App() {
                   <small className="task-date">{new Date(task.createdAt).toLocaleDateString()}</small>
                 </div>
                 <div className="card-actions">
+                  <button onClick={() => openEditModal(task)} className="edit-btn">
+                    Edit
+                  </button>
                   <button onClick={() => updateTaskStatus(task.id, 'in_progress')} className="reopen-btn">
                     Reopen
                   </button>
@@ -455,6 +501,29 @@ function App() {
         <div className="loading-indicator">
           <div className="loading-spinner"></div>
           <span>Loading more tasks...</span>
+        </div>
+      )}
+
+      {editingTask && (
+        <div className="modal-overlay" onClick={closeEditModal}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <h3>Edit Task</h3>
+            <input
+              type="text"
+              placeholder="Task title"
+              value={editTitle}
+              onChange={(e) => setEditTitle(e.target.value)}
+            />
+            <textarea
+              placeholder="Description (optional)"
+              value={editDescription}
+              onChange={(e) => setEditDescription(e.target.value)}
+            />
+            <div className="modal-actions">
+              <button onClick={updateTask} className="save-btn">Save</button>
+              <button onClick={closeEditModal} className="cancel-btn">Cancel</button>
+            </div>
+          </div>
         </div>
       )}
       
