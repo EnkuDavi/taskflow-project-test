@@ -24,6 +24,9 @@ function App() {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [totalTasks, setTotalTasks] = useState(0)
 
   const handleLogin = async (email: string, password: string) => {
     try {
@@ -82,15 +85,20 @@ function App() {
     setCurrentView('login')
   }
 
-  const fetchTasks = async (search = '') => {
+  const fetchTasks = async (search = '', page = 1) => {
     if (!isAuthenticated) return
     
     try {
       const searchParam = search ? `&search=${encodeURIComponent(search)}` : ''
-      const response = await apiRequest(`${API_BASE_URL}/tasks?limit=10&page=1${searchParam}`)
+      const response = await apiRequest(`${API_BASE_URL}/tasks?limit=10&page=${page}${searchParam}`)
       const data = await response.json()
       if (data.success) {
         setTasks(data.data)
+        if (data.meta) {
+          setTotalPages(data.meta.lastPage)
+          setCurrentPage(data.meta.currentPage)
+          setTotalTasks(data.meta.total)
+        }
       }
     } catch (error) {
       console.error('Error fetching tasks:', error)
@@ -121,7 +129,8 @@ function App() {
     if (!isAuthenticated) return
     
     const debounceTimer = setTimeout(() => {
-      fetchTasks(searchQuery)
+      setCurrentPage(1)
+      fetchTasks(searchQuery, 1)
     }, 500)
 
     return () => clearTimeout(debounceTimer)
@@ -129,6 +138,11 @@ function App() {
 
   const handleSearch = (query: string) => {
     setSearchQuery(query)
+  }
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page)
+    fetchTasks(searchQuery, page)
   }
 
   const addTask = async () => {
@@ -147,7 +161,7 @@ function App() {
       if (data.success) {
         setTitle('')
         setDescription('')
-        fetchTasks(searchQuery) // Refresh task list
+        fetchTasks(searchQuery, currentPage) // Refresh task list
       }
     } catch (error) {
       console.error('Error creating task:', error)
@@ -163,7 +177,7 @@ function App() {
       
       const data = await response.json()
       if (data.success) {
-        fetchTasks(searchQuery) // Refresh task list
+        fetchTasks(searchQuery, currentPage) // Refresh task list
       }
     } catch (error) {
       console.error('Error updating task:', error)
@@ -178,7 +192,7 @@ function App() {
       
       const data = await response.json()
       if (data.success) {
-        fetchTasks(searchQuery) // Refresh task list
+        fetchTasks(searchQuery, currentPage) // Refresh task list
       }
     } catch (error) {
       console.error('Error deleting task:', error)
@@ -240,7 +254,7 @@ function App() {
         <div className="kanban-column">
           <div className="column-header">
             <h3>Pending</h3>
-            <span className="task-count">{tasks.filter(t => t.status === 'pending').length}</span>
+            <span className="task-count">{tasks.filter(t => t.status === 'pending').length} / {totalTasks}</span>
           </div>
           <div className="column-content">
             {tasks.filter(task => task.status === 'pending').map(task => (
@@ -269,7 +283,7 @@ function App() {
         <div className="kanban-column">
           <div className="column-header">
             <h3>In Progress</h3>
-            <span className="task-count">{tasks.filter(t => t.status === 'in_progress').length}</span>
+            <span className="task-count">{tasks.filter(t => t.status === 'in_progress').length} / {totalTasks}</span>
           </div>
           <div className="column-content">
             {tasks.filter(task => task.status === 'in_progress').map(task => (
@@ -301,7 +315,7 @@ function App() {
         <div className="kanban-column">
           <div className="column-header">
             <h3>Completed</h3>
-            <span className="task-count">{tasks.filter(t => t.status === 'completed').length}</span>
+            <span className="task-count">{tasks.filter(t => t.status === 'completed').length} / {totalTasks}</span>
           </div>
           <div className="column-content">
             {tasks.filter(task => task.status === 'completed').map(task => (
@@ -327,6 +341,30 @@ function App() {
           </div>
         </div>
       </div>
+
+      {totalPages > 1 && (
+        <div className="pagination">
+          <button 
+            onClick={() => handlePageChange(currentPage - 1)}
+            disabled={currentPage === 1}
+            className="pagination-btn"
+          >
+            Previous
+          </button>
+          
+          <span className="pagination-info">
+            Page {currentPage} of {totalPages}
+          </span>
+          
+          <button 
+            onClick={() => handlePageChange(currentPage + 1)}
+            disabled={currentPage === totalPages}
+            className="pagination-btn"
+          >
+            Next
+          </button>
+        </div>
+      )}
     </div>
   )
 }
