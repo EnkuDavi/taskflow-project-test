@@ -27,6 +27,8 @@ function App() {
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [totalTasks, setTotalTasks] = useState(0)
+  const [hasMore, setHasMore] = useState(true)
+  const [loading, setLoading] = useState(false)
 
   const handleLogin = async (email: string, password: string) => {
     try {
@@ -85,23 +87,35 @@ function App() {
     setCurrentView('login')
   }
 
-  const fetchTasks = async (search = '', page = 1) => {
-    if (!isAuthenticated) return
+  const fetchTasks = async (search = '', page = 1, append = false) => {
+    if (!isAuthenticated || loading) return
     
+    setLoading(true)
     try {
       const searchParam = search ? `&search=${encodeURIComponent(search)}` : ''
       const response = await apiRequest(`${API_BASE_URL}/tasks?limit=10&page=${page}${searchParam}`)
       const data = await response.json()
       if (data.success) {
-        setTasks(data.data)
+        if (append) {
+          setTasks(prev => {
+            const existingIds = new Set(prev.map(task => task.id))
+            const newTasks = data.data.filter(task => !existingIds.has(task.id))
+            return [...prev, ...newTasks]
+          })
+        } else {
+          setTasks(data.data)
+        }
         if (data.meta) {
           setTotalPages(data.meta.lastPage)
           setCurrentPage(data.meta.currentPage)
           setTotalTasks(data.meta.total)
+          setHasMore(data.meta.currentPage < data.meta.lastPage)
         }
       }
     } catch (error) {
       console.error('Error fetching tasks:', error)
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -130,7 +144,8 @@ function App() {
     
     const debounceTimer = setTimeout(() => {
       setCurrentPage(1)
-      fetchTasks(searchQuery, 1)
+      setHasMore(true)
+      fetchTasks(searchQuery, 1, false)
     }, 500)
 
     return () => clearTimeout(debounceTimer)
@@ -140,10 +155,31 @@ function App() {
     setSearchQuery(query)
   }
 
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page)
-    fetchTasks(searchQuery, page)
+  const loadMore = () => {
+    if (hasMore && !loading) {
+      const nextPage = currentPage + 1
+      fetchTasks(searchQuery, nextPage, true)
+    }
   }
+
+  useEffect(() => {
+    let timeoutId: NodeJS.Timeout
+    
+    const handleScroll = () => {
+      clearTimeout(timeoutId)
+      timeoutId = setTimeout(() => {
+        if (hasMore && !loading && window.innerHeight + document.documentElement.scrollTop >= document.documentElement.offsetHeight - 1000) {
+          loadMore()
+        }
+      }, 100)
+    }
+
+    window.addEventListener('scroll', handleScroll)
+    return () => {
+      window.removeEventListener('scroll', handleScroll)
+      clearTimeout(timeoutId)
+    }
+  }, [hasMore, loading, currentPage, searchQuery])
 
   const addTask = async () => {
     if (!title.trim()) return
@@ -177,7 +213,9 @@ function App() {
       
       const data = await response.json()
       if (data.success) {
-        fetchTasks(searchQuery, currentPage) // Refresh task list
+        setCurrentPage(1)
+        setHasMore(true)
+        fetchTasks(searchQuery, 1, false) // Refresh from page 1
       }
     } catch (error) {
       console.error('Error updating task:', error)
@@ -192,7 +230,9 @@ function App() {
       
       const data = await response.json()
       if (data.success) {
-        fetchTasks(searchQuery, currentPage) // Refresh task list
+        setCurrentPage(1)
+        setHasMore(true)
+        fetchTasks(searchQuery, 1, false) // Refresh from page 1
       }
     } catch (error) {
       console.error('Error deleting task:', error)
@@ -342,27 +382,16 @@ function App() {
         </div>
       </div>
 
-      {totalPages > 1 && (
-        <div className="pagination">
-          <button 
-            onClick={() => handlePageChange(currentPage - 1)}
-            disabled={currentPage === 1}
-            className="pagination-btn"
-          >
-            Previous
-          </button>
-          
-          <span className="pagination-info">
-            Page {currentPage} of {totalPages}
-          </span>
-          
-          <button 
-            onClick={() => handlePageChange(currentPage + 1)}
-            disabled={currentPage === totalPages}
-            className="pagination-btn"
-          >
-            Next
-          </button>
+      {loading && (
+        <div className="loading-indicator">
+          <div className="loading-spinner"></div>
+          <span>Loading more tasks...</span>
+        </div>
+      )}
+      
+      {!hasMore && totalTasks > 10 && (
+        <div className="end-indicator">
+          All tasks loaded ({totalTasks} total)
         </div>
       )}
     </div>
