@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs"
+import { AppError } from "../../common/error";
 
 export class AuthService {
     constructor(
@@ -16,7 +17,7 @@ export class AuthService {
         })
 
         if(exist){
-            throw new Error("Email already exist")
+            throw new AppError("Email already exist")
         }
 
         const hashed = await bcrypt.hash(data.password, 10)
@@ -28,10 +29,19 @@ export class AuthService {
                 password: hashed
             },
             select: {
-                id: true,
                 email: true,
                 name: true
             }
         })
+    }
+
+    async validateLogin(email: string, password: string) {
+        const user = await this.prisma.user.findUnique({ where: { email } })
+        if (!user) throw new AppError('Invalid credentials', 401)
+
+        const match = await bcrypt.compare(password, user.password)
+        if (!match) throw new AppError('Invalid credentials', 401)
+
+        return user
     }
 }

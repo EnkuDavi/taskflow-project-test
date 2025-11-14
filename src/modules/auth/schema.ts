@@ -5,3 +5,8 @@ export const registerSchema = t.Object({
     password: t.Required(t.String({ minLength: 6 })),
     name: t.Required(t.String({ minLength: 3 }))
 })
+
+export const loginSchema = t.Object({
+  email: t.String({ format: 'email' }),
+  password: t.String()
+})
