@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react'
 import './App.css'
 import { Login } from './components/Login'
 import { Register } from './components/Register'
-import { apiRequest } from './utils/auth'
+import { apiRequest, setUnauthorizedCallback } from './utils/auth'
+import { API_BASE_URL } from './config/api'
 
 interface Task {
   id: string
@@ -26,7 +27,7 @@ function App() {
 
   const handleLogin = async (email: string, password: string) => {
     try {
-      const response = await fetch('http://localhost:3000/auth/login', {
+      const response = await fetch(`${API_BASE_URL}/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -50,7 +51,7 @@ function App() {
 
   const handleRegister = async (fullName: string, email: string, password: string) => {
     try {
-      const response = await fetch('http://localhost:3000/auth/register', {
+      const response = await fetch(`${API_BASE_URL}/auth/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -82,9 +83,11 @@ function App() {
   }
 
   const fetchTasks = async (search = '') => {
+    if (!isAuthenticated) return
+    
     try {
       const searchParam = search ? `&search=${encodeURIComponent(search)}` : ''
-      const response = await apiRequest(`http://localhost:3000/tasks?limit=10&page=1${searchParam}`)
+      const response = await apiRequest(`${API_BASE_URL}/tasks?limit=10&page=1${searchParam}`)
       const data = await response.json()
       if (data.success) {
         setTasks(data.data)
@@ -95,11 +98,16 @@ function App() {
   }
 
   useEffect(() => {
+    setUnauthorizedCallback(() => {
+      setIsAuthenticated(false)
+      setCurrentView('login')
+      setTasks([])
+    })
+    
     const token = localStorage.getItem('token')
     if (token) {
       setIsAuthenticated(true)
       setCurrentView('tasks')
-      fetchTasks()
     }
   }, [])
 
@@ -110,12 +118,14 @@ function App() {
   }, [isAuthenticated, currentView])
 
   useEffect(() => {
+    if (!isAuthenticated) return
+    
     const debounceTimer = setTimeout(() => {
       fetchTasks(searchQuery)
     }, 500)
 
     return () => clearTimeout(debounceTimer)
-  }, [searchQuery])
+  }, [searchQuery, isAuthenticated])
 
   const handleSearch = (query: string) => {
     setSearchQuery(query)
@@ -125,7 +135,7 @@ function App() {
     if (!title.trim()) return
     
     try {
-      const response = await apiRequest('http://localhost:3000/tasks', {
+      const response = await apiRequest(`${API_BASE_URL}/tasks`, {
         method: 'POST',
         body: JSON.stringify({
           title: title.trim(),
@@ -146,7 +156,7 @@ function App() {
 
   const updateTaskStatus = async (id: string, newStatus: 'pending' | 'in_progress' | 'completed') => {
     try {
-      const response = await apiRequest(`http://localhost:3000/tasks/${id}`, {
+      const response = await apiRequest(`${API_BASE_URL}/tasks/${id}`, {
         method: 'PATCH',
         body: JSON.stringify({ status: newStatus })
       })
@@ -162,7 +172,7 @@ function App() {
 
   const deleteTask = async (id: string) => {
     try {
-      const response = await apiRequest(`http://localhost:3000/tasks/${id}`, {
+      const response = await apiRequest(`${API_BASE_URL}/tasks/${id}`, {
         method: 'DELETE'
       })
       

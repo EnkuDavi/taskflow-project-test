@@ -15,6 +15,12 @@ export const getAuthHeaders = () => {
   }
 }
 
+let onUnauthorized: (() => void) | null = null
+
+export const setUnauthorizedCallback = (callback: () => void) => {
+  onUnauthorized = callback
+}
+
 export const apiRequest = async (url: string, options: RequestInit = {}) => {
   const response = await fetch(url, {
     ...options,
@@ -26,7 +32,9 @@ export const apiRequest = async (url: string, options: RequestInit = {}) => {
 
   if (response.status === 401) {
     localStorage.removeItem('token')
-    window.location.href = '/'
+    if (onUnauthorized) {
+      onUnauthorized()
+    }
   }
 
   return response
