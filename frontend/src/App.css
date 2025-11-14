@@ -3,11 +3,22 @@ body {
   min-height: 100vh;
   margin: 0;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+#root {
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .app {
   max-width: 900px;
-  margin: 0 auto;
+  width: 100%;
   padding: 2rem;
 }
 
