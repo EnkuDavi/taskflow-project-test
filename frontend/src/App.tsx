@@ -22,6 +22,7 @@ function App() {
   const [tasks, setTasks] = useState<Task[]>([])
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
+  const [searchQuery, setSearchQuery] = useState('')
 
   const handleLogin = async (email: string, password: string) => {
     try {
@@ -80,9 +81,10 @@ function App() {
     setCurrentView('login')
   }
 
-  const fetchTasks = async () => {
+  const fetchTasks = async (search = '') => {
     try {
-      const response = await apiRequest('http://localhost:3000/tasks?limit=10&page=1')
+      const searchParam = search ? `&search=${encodeURIComponent(search)}` : ''
+      const response = await apiRequest(`http://localhost:3000/tasks?limit=10&page=1${searchParam}`)
       const data = await response.json()
       if (data.success) {
         setTasks(data.data)
@@ -107,6 +109,18 @@ function App() {
     }
   }, [isAuthenticated, currentView])
 
+  useEffect(() => {
+    const debounceTimer = setTimeout(() => {
+      fetchTasks(searchQuery)
+    }, 500)
+
+    return () => clearTimeout(debounceTimer)
+  }, [searchQuery])
+
+  const handleSearch = (query: string) => {
+    setSearchQuery(query)
+  }
+
   const addTask = async () => {
     if (!title.trim()) return
     
@@ -123,7 +137,7 @@ function App() {
       if (data.success) {
         setTitle('')
         setDescription('')
-        fetchTasks() // Refresh task list
+        fetchTasks(searchQuery) // Refresh task list
       }
     } catch (error) {
       console.error('Error creating task:', error)
@@ -144,7 +158,7 @@ function App() {
       
       const data = await response.json()
       if (data.success) {
-        fetchTasks() // Refresh task list
+        fetchTasks(searchQuery) // Refresh task list
       }
     } catch (error) {
       console.error('Error updating task:', error)
@@ -159,7 +173,7 @@ function App() {
       
       const data = await response.json()
       if (data.success) {
-        fetchTasks() // Refresh task list
+        fetchTasks(searchQuery) // Refresh task list
       }
     } catch (error) {
       console.error('Error deleting task:', error)
@@ -206,6 +220,15 @@ function App() {
           onChange={(e) => setDescription(e.target.value)}
         />
         <button onClick={addTask}>Add Task</button>
+      </div>
+
+      <div className="search-form">
+        <input
+          type="text"
+          placeholder="Search tasks..."
+          value={searchQuery}
+          onChange={(e) => handleSearch(e.target.value)}
+        />
       </div>
 
       <div className="kanban-board">
