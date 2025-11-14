@@ -10,3 +10,20 @@ export const loginSchema = t.Object({
   email: t.String({ format: 'email' }),
   password: t.String()
 })
+
+// Sample response swagger 
+export const registResponse = t.Object({
+  success: t.Boolean(),
+  data: t.Object({
+    id: t.String(),
+    email: t.String(),
+    name: t.String()
+  })
+})
+
+export const loginResponse = t.Object({
+  success: t.Boolean(),
+  data: t.Object({
+    token: t.String()
+  })
+})

@@ -3,7 +3,7 @@ import Elysia from "elysia";
 
 export const swaggerPlugin = new Elysia().use(
     swagger({
-        path: '/api-docs',
+        path: '/docs',
         documentation: {
             info: {
                 title: 'Task Flow Management API',

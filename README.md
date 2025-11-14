@@ -88,6 +88,11 @@ Backend runs at:
 http://localhost:3000
 ```
 
+Swagger UI:
+```bash
+http://localhost:3000/docs
+```
+
 ## 💻 Frontend Setup
 ```bash
 cd frontend

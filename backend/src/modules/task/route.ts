@@ -1,5 +1,5 @@
 import { Elysia } from 'elysia'
-import { createTaskSchema, updateTaskSchema } from './schema'
+import { createTaskSchema, taskDeleteResponse, taskPaginatedResponse, taskResponse, updateTaskSchema } from './schema'
 import { TaskService } from './service'
 import { requireUser } from '../../common/auth-middleware'
 import { prisma } from '../../plugins/prisma'
@@ -16,7 +16,10 @@ export const taskRoute = new Elysia({ prefix: "/tasks" })
       const result = await service.list(user.id, query);
       return success(result);
     },
-    { query: paginationQuerySchema }
+    { 
+      query: paginationQuerySchema,
+      response: taskPaginatedResponse
+    }
   )
 
   .post(
@@ -26,13 +29,22 @@ export const taskRoute = new Elysia({ prefix: "/tasks" })
       const result = await service.create(user.id, body);
       return success(result);
     },
-    { body: createTaskSchema }
+    { 
+      body: createTaskSchema,
+      response: {
+        200: taskResponse
+      }
+    }
   )
 
   .get("/:id", async ({ user, params }) => {
     const service = new TaskService(prisma);
     const result = await service.detail(user.id, params.id);
     return success(result);
+  }, {
+    response: {
+      200: taskResponse
+    }
   })
 
   .patch(
@@ -42,11 +54,20 @@ export const taskRoute = new Elysia({ prefix: "/tasks" })
       const result = await service.update(user.id, params.id, body);
       return success(result);
     },
-    { body: updateTaskSchema }
+    { 
+      body: updateTaskSchema,
+      response: {
+        200: taskResponse
+      }
+    }
   )
 
   .delete("/:id", async ({ user, params }) => {
     const service = new TaskService(prisma);
     const result = await service.delete(user.id, params.id);
     return success(result);
+  }, {
+    response: {
+      200: taskDeleteResponse
+    }
   });

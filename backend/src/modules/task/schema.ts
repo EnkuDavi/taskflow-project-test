@@ -1,4 +1,5 @@
 import { Static, t } from "elysia";
+import { paginationMetaSchema } from "../../common/pagination";
 
 export const createTaskSchema = t.Object({
   title: t.String(),
@@ -20,3 +21,37 @@ export const updateTaskSchema = t.Object({
 });
 
 export type UpdateTaskDto = Static<typeof updateTaskSchema>;
+
+
+// Sample response swagger 
+export const taskItemSchema = t.Object({
+  id: t.String(),
+  title: t.String(),
+  description: t.Nullable(t.String()),
+  status: t.String(),
+  userId: t.String(),
+  createdAt: t.String(),
+  updatedAt: t.String(),
+});
+
+export const taskResponse = t.Object({
+  success: t.Boolean(),
+  data: taskItemSchema
+})
+
+
+export const taskDeleteResponse = t.Object({
+  success: t.Boolean(),
+  data: t.Object({
+    success: t.Boolean(),
+  })
+})
+
+export const taskPaginatedResponse = t.Object({
+  success: t.Boolean(),
+  message: t.String(),
+  data: t.Array(taskItemSchema),
+  meta: paginationMetaSchema,
+});
+
+

@@ -1,6 +1,6 @@
 import { Elysia } from "elysia";
 import { AuthService } from "./service";
-import { loginSchema, registerSchema } from "./schema";
+import { loginResponse, loginSchema, registerSchema, registResponse } from "./schema";
 import { prisma } from "../../plugins/prisma";
 import { success } from "../../common/success";
 import { jwtPlugin } from "../../plugins/jwt";
@@ -14,7 +14,12 @@ export const authRoute = new Elysia({ prefix: "/auth" })
       const result = await auth.register(body);
       return success(result);
     },
-    { body: registerSchema }
+    {
+      body: registerSchema,
+      response: {
+        200: registResponse
+      }
+    }
   )
 
   .post(
@@ -26,7 +31,7 @@ export const authRoute = new Elysia({ prefix: "/auth" })
       const token = await jwt.sign({
         sub: user.id,
         email: user.email,
-        exp: Math.floor(Date.now() / 1000) + 60 * 60 // 1 jam
+        exp: Math.floor(Date.now() / 1000) + 60 * 60, // 1 jam
       });
 
       return {
@@ -34,5 +39,10 @@ export const authRoute = new Elysia({ prefix: "/auth" })
         data: { token },
       };
     },
-    { body: loginSchema }
+    {
+      body: loginSchema,
+      response: {
+        200: loginResponse,
+      },
+    }
   );
