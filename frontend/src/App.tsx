@@ -150,8 +150,19 @@ function App() {
     }
   }
 
-  const deleteTask = (id: string) => {
-    setTasks(tasks.filter(task => task.id !== id))
+  const deleteTask = async (id: string) => {
+    try {
+      const response = await apiRequest(`http://localhost:3000/tasks/${id}`, {
+        method: 'DELETE'
+      })
+      
+      const data = await response.json()
+      if (data.success) {
+        fetchTasks() // Refresh task list
+      }
+    } catch (error) {
+      console.error('Error deleting task:', error)
+    }
   }
 
   if (currentView === 'login') {
