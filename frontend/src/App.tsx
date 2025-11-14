@@ -20,14 +20,21 @@ type AuthView = 'login' | 'register' | 'tasks'
 function App() {
   const [currentView, setCurrentView] = useState<AuthView>('login')
   const [isAuthenticated, setIsAuthenticated] = useState(false)
-  const [tasks, setTasks] = useState<Task[]>([])
+  const [pendingTasks, setPendingTasks] = useState<Task[]>([])
+  const [inProgressTasks, setInProgressTasks] = useState<Task[]>([])
+  const [completedTasks, setCompletedTasks] = useState<Task[]>([])
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
-  const [currentPage, setCurrentPage] = useState(1)
-  const [totalPages, setTotalPages] = useState(1)
-  const [totalTasks, setTotalTasks] = useState(0)
-  const [hasMore, setHasMore] = useState(true)
+  const [pendingPage, setPendingPage] = useState(1)
+  const [inProgressPage, setInProgressPage] = useState(1)
+  const [completedPage, setCompletedPage] = useState(1)
+  const [pendingHasMore, setPendingHasMore] = useState(true)
+  const [inProgressHasMore, setInProgressHasMore] = useState(true)
+  const [completedHasMore, setCompletedHasMore] = useState(true)
+  const [pendingTotal, setPendingTotal] = useState(0)
+  const [inProgressTotal, setInProgressTotal] = useState(0)
+  const [completedTotal, setCompletedTotal] = useState(0)
   const [loading, setLoading] = useState(false)
 
   const handleLogin = async (email: string, password: string) => {
@@ -82,48 +89,77 @@ function App() {
 
   const handleLogout = () => {
     localStorage.removeItem('token')
-    setTasks([])
+    setPendingTasks([])
+    setInProgressTasks([])
+    setCompletedTasks([])
+    setPendingTotal(0)
+    setInProgressTotal(0)
+    setCompletedTotal(0)
     setIsAuthenticated(false)
     setCurrentView('login')
   }
 
-  const fetchTasks = async (search = '', page = 1, append = false) => {
+  const fetchTasksByStatus = async (status: 'pending' | 'in_progress' | 'completed', search = '', page = 1, append = false) => {
     if (!isAuthenticated || loading) return
     
     setLoading(true)
     try {
       const searchParam = search ? `&search=${encodeURIComponent(search)}` : ''
-      const response = await apiRequest(`${API_BASE_URL}/tasks?limit=10&page=${page}${searchParam}`)
+      const response = await apiRequest(`${API_BASE_URL}/tasks?status=${status}&limit=10&page=${page}${searchParam}`)
       const data = await response.json()
+      
       if (data.success) {
-        if (append) {
-          setTasks(prev => {
+        const updateTasks = (prev: Task[]) => {
+          if (append) {
             const existingIds = new Set(prev.map(task => task.id))
-            const newTasks = data.data.filter(task => !existingIds.has(task.id))
+            const newTasks = data.data.filter((task: Task) => !existingIds.has(task.id))
             return [...prev, ...newTasks]
-          })
-        } else {
-          setTasks(data.data)
+          }
+          return data.data
         }
-        if (data.meta) {
-          setTotalPages(data.meta.lastPage)
-          setCurrentPage(data.meta.currentPage)
-          setTotalTasks(data.meta.total)
-          setHasMore(data.meta.currentPage < data.meta.lastPage)
+        
+        if (status === 'pending') {
+          setPendingTasks(updateTasks)
+          setPendingPage(data.meta.currentPage)
+          setPendingHasMore(data.meta.currentPage < data.meta.lastPage)
+          setPendingTotal(data.meta.total)
+        } else if (status === 'in_progress') {
+          setInProgressTasks(updateTasks)
+          setInProgressPage(data.meta.currentPage)
+          setInProgressHasMore(data.meta.currentPage < data.meta.lastPage)
+          setInProgressTotal(data.meta.total)
+        } else {
+          setCompletedTasks(updateTasks)
+          setCompletedPage(data.meta.currentPage)
+          setCompletedHasMore(data.meta.currentPage < data.meta.lastPage)
+          setCompletedTotal(data.meta.total)
         }
       }
     } catch (error) {
-      console.error('Error fetching tasks:', error)
+      console.error(`Error fetching ${status} tasks:`, error)
     } finally {
       setLoading(false)
     }
+  }
+
+  const fetchAllTasks = async (search = '') => {
+    await Promise.all([
+      fetchTasksByStatus('pending', search, 1, false),
+      fetchTasksByStatus('in_progress', search, 1, false),
+      fetchTasksByStatus('completed', search, 1, false)
+    ])
   }
 
   useEffect(() => {
     setUnauthorizedCallback(() => {
       setIsAuthenticated(false)
       setCurrentView('login')
-      setTasks([])
+      setPendingTasks([])
+      setInProgressTasks([])
+      setCompletedTasks([])
+      setPendingTotal(0)
+      setInProgressTotal(0)
+      setCompletedTotal(0)
     })
     
     const token = localStorage.getItem('token')
@@ -135,7 +171,7 @@ function App() {
 
   useEffect(() => {
     if (isAuthenticated && currentView === 'tasks') {
-      fetchTasks()
+      fetchAllTasks()
     }
   }, [isAuthenticated, currentView])
 
@@ -143,9 +179,13 @@ function App() {
     if (!isAuthenticated) return
     
     const debounceTimer = setTimeout(() => {
-      setCurrentPage(1)
-      setHasMore(true)
-      fetchTasks(searchQuery, 1, false)
+      setPendingPage(1)
+      setInProgressPage(1)
+      setCompletedPage(1)
+      setPendingHasMore(true)
+      setInProgressHasMore(true)
+      setCompletedHasMore(true)
+      fetchAllTasks(searchQuery)
     }, 500)
 
     return () => clearTimeout(debounceTimer)
@@ -155,31 +195,49 @@ function App() {
     setSearchQuery(query)
   }
 
-  const loadMore = () => {
-    if (hasMore && !loading) {
-      const nextPage = currentPage + 1
-      fetchTasks(searchQuery, nextPage, true)
+  const loadMoreForStatus = (status: 'pending' | 'in_progress' | 'completed') => {
+    if (loading) return
+    
+    if (status === 'pending' && pendingHasMore) {
+      fetchTasksByStatus('pending', searchQuery, pendingPage + 1, true)
+    } else if (status === 'in_progress' && inProgressHasMore) {
+      fetchTasksByStatus('in_progress', searchQuery, inProgressPage + 1, true)
+    } else if (status === 'completed' && completedHasMore) {
+      fetchTasksByStatus('completed', searchQuery, completedPage + 1, true)
     }
   }
 
   useEffect(() => {
-    let timeoutId: NodeJS.Timeout
-    
-    const handleScroll = () => {
-      clearTimeout(timeoutId)
-      timeoutId = setTimeout(() => {
-        if (hasMore && !loading && window.innerHeight + document.documentElement.scrollTop >= document.documentElement.offsetHeight - 1000) {
-          loadMore()
+    const handleScroll = (e: Event) => {
+      const target = e.target as HTMLElement
+      if (target.classList.contains('column-content')) {
+        const { scrollTop, scrollHeight, clientHeight } = target
+        if (scrollTop + clientHeight >= scrollHeight - 100) {
+          const columnType = target.closest('.kanban-column')?.querySelector('h3')?.textContent?.toLowerCase()
+          if (columnType === 'pending') {
+            loadMoreForStatus('pending')
+          } else if (columnType === 'in progress') {
+            loadMoreForStatus('in_progress')
+          } else if (columnType === 'completed') {
+            loadMoreForStatus('completed')
+          }
         }
-      }, 100)
+      }
     }
 
-    window.addEventListener('scroll', handleScroll)
+    const columns = document.querySelectorAll('.column-content')
+    columns.forEach(column => {
+      column.addEventListener('scroll', handleScroll)
+    })
+
     return () => {
-      window.removeEventListener('scroll', handleScroll)
-      clearTimeout(timeoutId)
+      columns.forEach(column => {
+        column.removeEventListener('scroll', handleScroll)
+      })
     }
-  }, [hasMore, loading, currentPage, searchQuery])
+  }, [loading, pendingHasMore, inProgressHasMore, completedHasMore, pendingPage, inProgressPage, completedPage, searchQuery])
+
+
 
   const addTask = async () => {
     if (!title.trim()) return
@@ -197,7 +255,7 @@ function App() {
       if (data.success) {
         setTitle('')
         setDescription('')
-        fetchTasks(searchQuery, currentPage) // Refresh task list
+        fetchAllTasks(searchQuery)
       }
     } catch (error) {
       console.error('Error creating task:', error)
@@ -213,9 +271,7 @@ function App() {
       
       const data = await response.json()
       if (data.success) {
-        setCurrentPage(1)
-        setHasMore(true)
-        fetchTasks(searchQuery, 1, false) // Refresh from page 1
+        fetchAllTasks(searchQuery)
       }
     } catch (error) {
       console.error('Error updating task:', error)
@@ -230,9 +286,7 @@ function App() {
       
       const data = await response.json()
       if (data.success) {
-        setCurrentPage(1)
-        setHasMore(true)
-        fetchTasks(searchQuery, 1, false) // Refresh from page 1
+        fetchAllTasks(searchQuery)
       }
     } catch (error) {
       console.error('Error deleting task:', error)
@@ -294,10 +348,10 @@ function App() {
         <div className="kanban-column">
           <div className="column-header">
             <h3>Pending</h3>
-            <span className="task-count">{tasks.filter(t => t.status === 'pending').length} / {totalTasks}</span>
+            <span className="task-count">{pendingTasks.length} / {pendingTotal}</span>
           </div>
           <div className="column-content">
-            {tasks.filter(task => task.status === 'pending').map(task => (
+            {pendingTasks.map(task => (
               <div key={task.id} className="kanban-card">
                 <div className="card-content">
                   <h4>{task.title}</h4>
@@ -314,8 +368,13 @@ function App() {
                 </div>
               </div>
             ))}
-            {tasks.filter(t => t.status === 'pending').length === 0 && (
+            {pendingTasks.length === 0 && (
               <div className="empty-column">No pending tasks</div>
+            )}
+            {loading && pendingHasMore && (
+              <div className="column-loading">
+                <div className="loading-spinner"></div>
+              </div>
             )}
           </div>
         </div>
@@ -323,10 +382,10 @@ function App() {
         <div className="kanban-column">
           <div className="column-header">
             <h3>In Progress</h3>
-            <span className="task-count">{tasks.filter(t => t.status === 'in_progress').length} / {totalTasks}</span>
+            <span className="task-count">{inProgressTasks.length} / {inProgressTotal}</span>
           </div>
           <div className="column-content">
-            {tasks.filter(task => task.status === 'in_progress').map(task => (
+            {inProgressTasks.map(task => (
               <div key={task.id} className="kanban-card in-progress">
                 <div className="card-content">
                   <h4>{task.title}</h4>
@@ -346,8 +405,13 @@ function App() {
                 </div>
               </div>
             ))}
-            {tasks.filter(t => t.status === 'in_progress').length === 0 && (
+            {inProgressTasks.length === 0 && (
               <div className="empty-column">No tasks in progress</div>
+            )}
+            {loading && inProgressHasMore && (
+              <div className="column-loading">
+                <div className="loading-spinner"></div>
+              </div>
             )}
           </div>
         </div>
@@ -355,10 +419,10 @@ function App() {
         <div className="kanban-column">
           <div className="column-header">
             <h3>Completed</h3>
-            <span className="task-count">{tasks.filter(t => t.status === 'completed').length} / {totalTasks}</span>
+            <span className="task-count">{completedTasks.length} / {completedTotal}</span>
           </div>
           <div className="column-content">
-            {tasks.filter(task => task.status === 'completed').map(task => (
+            {completedTasks.map(task => (
               <div key={task.id} className="kanban-card completed">
                 <div className="card-content">
                   <h4>{task.title}</h4>
@@ -375,8 +439,13 @@ function App() {
                 </div>
               </div>
             ))}
-            {tasks.filter(t => t.status === 'completed').length === 0 && (
+            {completedTasks.length === 0 && (
               <div className="empty-column">No completed tasks</div>
+            )}
+            {loading && completedHasMore && (
+              <div className="column-loading">
+                <div className="loading-spinner"></div>
+              </div>
             )}
           </div>
         </div>
@@ -389,11 +458,7 @@ function App() {
         </div>
       )}
       
-      {!hasMore && totalTasks > 10 && (
-        <div className="end-indicator">
-          All tasks loaded ({totalTasks} total)
-        </div>
-      )}
+
     </div>
   )
 }
