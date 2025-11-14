@@ -1,5 +1,4 @@
 import { Elysia } from "elysia";
-import { prismaPlugin } from "./plugins/prisma";
 import { loggerPlugin } from "./plugins/logger";
 import { corsPlugin } from "./plugins/cors";
 import { swaggerPlugin } from "./plugins/swagger";
@@ -12,7 +11,6 @@ const app = new Elysia()
   .use(corsPlugin)
   .use(swaggerPlugin)
   .use(jwtPlugin)
-  .use(prismaPlugin)
   .use(authRoute)
   .onError(createErrorHandler())
   .listen(3000);
