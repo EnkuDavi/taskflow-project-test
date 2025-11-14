@@ -2,12 +2,16 @@ import { useState, useEffect } from 'react'
 import './App.css'
 import { Login } from './components/Login'
 import { Register } from './components/Register'
+import { apiRequest } from './utils/auth'
 
 interface Task {
-  id: number
+  id: string
   title: string
-  description?: string
+  description?: string | null
   status: 'pending' | 'completed'
+  userId: string
+  createdAt: string
+  updatedAt: string
 }
 
 type AuthView = 'login' | 'register' | 'tasks'
@@ -75,27 +79,54 @@ function App() {
     setCurrentView('login')
   }
 
+  const fetchTasks = async () => {
+    try {
+      const response = await apiRequest('http://localhost:3000/tasks?limit=10&page=1')
+      const data = await response.json()
+      if (data.success) {
+        setTasks(data.data)
+      }
+    } catch (error) {
+      console.error('Error fetching tasks:', error)
+    }
+  }
+
   useEffect(() => {
     const token = localStorage.getItem('token')
     if (token) {
       setIsAuthenticated(true)
       setCurrentView('tasks')
+      fetchTasks()
     }
   }, [])
 
-  const addTask = () => {
+  useEffect(() => {
+    if (isAuthenticated && currentView === 'tasks') {
+      fetchTasks()
+    }
+  }, [isAuthenticated, currentView])
+
+  const addTask = async () => {
     if (!title.trim()) return
     
-    const newTask: Task = {
-      id: Date.now(),
-      title: title.trim(),
-      description: description.trim() || undefined,
-      status: 'pending'
+    try {
+      const response = await apiRequest('http://localhost:3000/tasks', {
+        method: 'POST',
+        body: JSON.stringify({
+          title: title.trim(),
+          description: description.trim() || undefined
+        })
+      })
+      
+      const data = await response.json()
+      if (data.success) {
+        setTitle('')
+        setDescription('')
+        fetchTasks() // Refresh task list
+      }
+    } catch (error) {
+      console.error('Error creating task:', error)
     }
-    
-    setTasks([...tasks, newTask])
-    setTitle('')
-    setDescription('')
   }
 
   const toggleStatus = (id: number) => {
@@ -164,6 +195,7 @@ function App() {
                 <div className="card-content">
                   <h4>{task.title}</h4>
                   {task.description && <p>{task.description}</p>}
+                  <small className="task-date">{new Date(task.createdAt).toLocaleDateString()}</small>
                 </div>
                 <div className="card-actions">
                   <button onClick={() => toggleStatus(task.id)} className="complete-btn">
@@ -192,6 +224,7 @@ function App() {
                 <div className="card-content">
                   <h4>{task.title}</h4>
                   {task.description && <p>{task.description}</p>}
+                  <small className="task-date">{new Date(task.createdAt).toLocaleDateString()}</small>
                 </div>
                 <div className="card-actions">
                   <button onClick={() => toggleStatus(task.id)} className="reopen-btn">

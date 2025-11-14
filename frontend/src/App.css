@@ -164,6 +164,13 @@ h1 {
   line-height: 1.4;
 }
 
+.task-date {
+  color: #9ca3af;
+  font-size: 0.75rem;
+  display: block;
+  margin-top: 0.5rem;
+}
+
 .card-actions {
   display: flex;
   gap: 0.5rem;
