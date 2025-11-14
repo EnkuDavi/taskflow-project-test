@@ -1,18 +1,29 @@
 import { useState } from 'react'
 
 interface LoginProps {
-  onLogin: (email: string, password: string) => void
+  onLogin: (email: string, password: string) => Promise<void>
   onSwitchToRegister: () => void
 }
 
 export const Login = ({ onLogin, onSwitchToRegister }: LoginProps) => {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setError('')
+    
     if (email && password) {
-      onLogin(email, password)
+      setLoading(true)
+      try {
+        await onLogin(email, password)
+      } catch (err) {
+        setError('Login failed. Please check your credentials.')
+      } finally {
+        setLoading(false)
+      }
     }
   }
 
@@ -35,7 +46,10 @@ export const Login = ({ onLogin, onSwitchToRegister }: LoginProps) => {
             onChange={(e) => setPassword(e.target.value)}
             required
           />
-          <button type="submit">Login</button>
+          {error && <div className="error-message">{error}</div>}
+          <button type="submit" disabled={loading}>
+            {loading ? 'Logging in...' : 'Login'}
+          </button>
         </form>
         <p className="auth-switch">
           Don't have an account?{' '}

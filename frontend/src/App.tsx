@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import './App.css'
 import { Login } from './components/Login'
 import { Register } from './components/Register'
@@ -19,10 +19,28 @@ function App() {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
 
-  const handleLogin = (email: string, password: string) => {
-    console.log('Login:', { email, password })
-    setIsAuthenticated(true)
-    setCurrentView('tasks')
+  const handleLogin = async (email: string, password: string) => {
+    try {
+      const response = await fetch('http://localhost:3000/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password })
+      })
+
+      const data = await response.json()
+      
+      if (data.success && data.data.token) {
+        localStorage.setItem('token', data.data.token)
+        setIsAuthenticated(true)
+        setCurrentView('tasks')
+      } else {
+        console.error('Login failed:', data)
+      }
+    } catch (error) {
+      console.error('Login error:', error)
+    }
   }
 
   const handleRegister = async (fullName: string, email: string, password: string) => {
@@ -42,8 +60,7 @@ function App() {
       const data = await response.json()
       
       if (data.success) {
-        setIsAuthenticated(true)
-        setCurrentView('tasks')
+        setCurrentView('login')
       } else {
         console.error('Registration failed:', data)
       }
@@ -53,9 +70,18 @@ function App() {
   }
 
   const handleLogout = () => {
+    localStorage.removeItem('token')
     setIsAuthenticated(false)
     setCurrentView('login')
   }
+
+  useEffect(() => {
+    const token = localStorage.getItem('token')
+    if (token) {
+      setIsAuthenticated(true)
+      setCurrentView('tasks')
+    }
+  }, [])
 
   const addTask = () => {
     if (!title.trim()) return
