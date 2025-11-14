@@ -1,7 +1,7 @@
 import { useState } from 'react'
 
 interface RegisterProps {
-  onRegister: (fullName: string, email: string, password: string) => void
+  onRegister: (fullName: string, email: string, password: string) => Promise<void>
   onSwitchToLogin: () => void
 }
 
@@ -11,8 +11,9 @@ export const Register = ({ onRegister, onSwitchToLogin }: RegisterProps) => {
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
 
@@ -22,7 +23,14 @@ export const Register = ({ onRegister, onSwitchToLogin }: RegisterProps) => {
     }
 
     if (fullName && email && password) {
-      onRegister(fullName, email, password)
+      setLoading(true)
+      try {
+        await onRegister(fullName, email, password)
+      } catch (err) {
+        setError('Registration failed. Please try again.')
+      } finally {
+        setLoading(false)
+      }
     }
   }
 
@@ -60,7 +68,9 @@ export const Register = ({ onRegister, onSwitchToLogin }: RegisterProps) => {
             required
           />
           {error && <div className="error-message">{error}</div>}
-          <button type="submit">Register</button>
+          <button type="submit" disabled={loading}>
+            {loading ? 'Registering...' : 'Register'}
+          </button>
         </form>
         <p className="auth-switch">
           Already have an account?{' '}

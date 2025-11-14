@@ -25,10 +25,31 @@ function App() {
     setCurrentView('tasks')
   }
 
-  const handleRegister = (fullName: string, email: string, password: string) => {
-    console.log('Register:', { fullName, email, password })
-    setIsAuthenticated(true)
-    setCurrentView('tasks')
+  const handleRegister = async (fullName: string, email: string, password: string) => {
+    try {
+      const response = await fetch('http://localhost:3000/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email,
+          password,
+          name: fullName
+        })
+      })
+
+      const data = await response.json()
+      
+      if (data.success) {
+        setIsAuthenticated(true)
+        setCurrentView('tasks')
+      } else {
+        console.error('Registration failed:', data)
+      }
+    } catch (error) {
+      console.error('Registration error:', error)
+    }
   }
 
   const handleLogout = () => {
