@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import './App.css'
+import { Login } from './components/Login'
+import { Register } from './components/Register'
 
 interface Task {
   id: number
@@ -8,10 +10,31 @@ interface Task {
   status: 'pending' | 'completed'
 }
 
+type AuthView = 'login' | 'register' | 'tasks'
+
 function App() {
+  const [currentView, setCurrentView] = useState<AuthView>('login')
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [tasks, setTasks] = useState<Task[]>([])
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
+
+  const handleLogin = (email: string, password: string) => {
+    console.log('Login:', { email, password })
+    setIsAuthenticated(true)
+    setCurrentView('tasks')
+  }
+
+  const handleRegister = (fullName: string, email: string, password: string) => {
+    console.log('Register:', { fullName, email, password })
+    setIsAuthenticated(true)
+    setCurrentView('tasks')
+  }
+
+  const handleLogout = () => {
+    setIsAuthenticated(false)
+    setCurrentView('login')
+  }
 
   const addTask = () => {
     if (!title.trim()) return
@@ -40,9 +63,32 @@ function App() {
     setTasks(tasks.filter(task => task.id !== id))
   }
 
+  if (currentView === 'login') {
+    return (
+      <Login 
+        onLogin={handleLogin}
+        onSwitchToRegister={() => setCurrentView('register')}
+      />
+    )
+  }
+
+  if (currentView === 'register') {
+    return (
+      <Register 
+        onRegister={handleRegister}
+        onSwitchToLogin={() => setCurrentView('login')}
+      />
+    )
+  }
+
   return (
     <div className="app">
-      <h1>Task Management</h1>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+        <h1>Task Management</h1>
+        <button onClick={handleLogout} style={{ background: 'rgba(255,255,255,0.2)', color: 'white', border: 'none', padding: '0.5rem 1rem', borderRadius: '8px', cursor: 'pointer' }}>
+          Logout
+        </button>
+      </div>
       
       <div className="task-form">
         <input
