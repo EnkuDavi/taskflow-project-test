@@ -5,6 +5,7 @@ import { swaggerPlugin } from "./plugins/swagger";
 import { jwtPlugin } from "./plugins/jwt";
 import { authRoute } from "./modules/auth/route";
 import { createErrorHandler } from "./common/error-handler";
+import { taskRoute } from "./modules/task/route";
 
 const app = new Elysia()
   .use(loggerPlugin)
@@ -12,6 +13,7 @@ const app = new Elysia()
   .use(swaggerPlugin)
   .use(jwtPlugin)
   .use(authRoute)
+  .use(taskRoute)
   .onError(createErrorHandler())
   .listen(3000);
 
