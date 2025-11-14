@@ -129,15 +129,28 @@ function App() {
     }
   }
 
-  const toggleStatus = (id: number) => {
-    setTasks(tasks.map(task => 
-      task.id === id 
-        ? { ...task, status: task.status === 'pending' ? 'completed' : 'pending' }
-        : task
-    ))
+  const toggleStatus = async (id: string) => {
+    const task = tasks.find(t => t.id === id)
+    if (!task) return
+
+    const newStatus = task.status === 'pending' ? 'completed' : 'pending'
+    
+    try {
+      const response = await apiRequest(`http://localhost:3000/tasks/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status: newStatus })
+      })
+      
+      const data = await response.json()
+      if (data.success) {
+        fetchTasks() // Refresh task list
+      }
+    } catch (error) {
+      console.error('Error updating task:', error)
+    }
   }
 
-  const deleteTask = (id: number) => {
+  const deleteTask = (id: string) => {
     setTasks(tasks.filter(task => task.id !== id))
   }
 
