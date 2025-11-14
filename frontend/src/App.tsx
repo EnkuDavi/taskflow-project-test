@@ -105,27 +105,62 @@ function App() {
         <button onClick={addTask}>Add Task</button>
       </div>
 
-      <div className="task-list">
-        {tasks.map(task => (
-          <div key={task.id} className={`task-item ${task.status}`}>
-            <div className="task-content">
-              <h3>{task.title}</h3>
-              {task.description && <p>{task.description}</p>}
-              <span className="status">{task.status}</span>
-            </div>
-            <div className="task-actions">
-              <button onClick={() => toggleStatus(task.id)}>
-                {task.status === 'pending' ? 'Complete' : 'Reopen'}
-              </button>
-              <button onClick={() => deleteTask(task.id)} className="delete">
-                Delete
-              </button>
-            </div>
+      <div className="kanban-board">
+        <div className="kanban-column">
+          <div className="column-header">
+            <h3>Pending</h3>
+            <span className="task-count">{tasks.filter(t => t.status === 'pending').length}</span>
           </div>
-        ))}
-        {tasks.length === 0 && (
-          <p className="no-tasks">No tasks yet. Add one above!</p>
-        )}
+          <div className="column-content">
+            {tasks.filter(task => task.status === 'pending').map(task => (
+              <div key={task.id} className="kanban-card">
+                <div className="card-content">
+                  <h4>{task.title}</h4>
+                  {task.description && <p>{task.description}</p>}
+                </div>
+                <div className="card-actions">
+                  <button onClick={() => toggleStatus(task.id)} className="complete-btn">
+                    Complete
+                  </button>
+                  <button onClick={() => deleteTask(task.id)} className="delete-btn">
+                    Delete
+                  </button>
+                </div>
+              </div>
+            ))}
+            {tasks.filter(t => t.status === 'pending').length === 0 && (
+              <div className="empty-column">No pending tasks</div>
+            )}
+          </div>
+        </div>
+
+        <div className="kanban-column">
+          <div className="column-header">
+            <h3>Completed</h3>
+            <span className="task-count">{tasks.filter(t => t.status === 'completed').length}</span>
+          </div>
+          <div className="column-content">
+            {tasks.filter(task => task.status === 'completed').map(task => (
+              <div key={task.id} className="kanban-card completed">
+                <div className="card-content">
+                  <h4>{task.title}</h4>
+                  {task.description && <p>{task.description}</p>}
+                </div>
+                <div className="card-actions">
+                  <button onClick={() => toggleStatus(task.id)} className="reopen-btn">
+                    Reopen
+                  </button>
+                  <button onClick={() => deleteTask(task.id)} className="delete-btn">
+                    Delete
+                  </button>
+                </div>
+              </div>
+            ))}
+            {tasks.filter(t => t.status === 'completed').length === 0 && (
+              <div className="empty-column">No completed tasks</div>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   )
