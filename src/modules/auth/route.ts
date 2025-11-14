@@ -26,6 +26,7 @@ export const authRoute = new Elysia({ prefix: "/auth" })
       const token = await jwt.sign({
         sub: user.id,
         email: user.email,
+        exp: Math.floor(Date.now() / 1000) + 60 * 60 // 1 jam
       });
 
       return {
