@@ -8,7 +8,7 @@ interface Task {
   id: string
   title: string
   description?: string | null
-  status: 'pending' | 'completed'
+  status: 'pending' | 'in_progress' | 'completed'
   userId: string
   createdAt: string
   updatedAt: string
@@ -144,12 +144,7 @@ function App() {
     }
   }
 
-  const toggleStatus = async (id: string) => {
-    const task = tasks.find(t => t.id === id)
-    if (!task) return
-
-    const newStatus = task.status === 'pending' ? 'completed' : 'pending'
-    
+  const updateTaskStatus = async (id: string, newStatus: 'pending' | 'in_progress' | 'completed') => {
     try {
       const response = await apiRequest(`http://localhost:3000/tasks/${id}`, {
         method: 'PATCH',
@@ -246,8 +241,8 @@ function App() {
                   <small className="task-date">{new Date(task.createdAt).toLocaleDateString()}</small>
                 </div>
                 <div className="card-actions">
-                  <button onClick={() => toggleStatus(task.id)} className="complete-btn">
-                    Complete
+                  <button onClick={() => updateTaskStatus(task.id, 'in_progress')} className="progress-btn">
+                    Start
                   </button>
                   <button onClick={() => deleteTask(task.id)} className="delete-btn">
                     Delete
@@ -257,6 +252,38 @@ function App() {
             ))}
             {tasks.filter(t => t.status === 'pending').length === 0 && (
               <div className="empty-column">No pending tasks</div>
+            )}
+          </div>
+        </div>
+
+        <div className="kanban-column">
+          <div className="column-header">
+            <h3>In Progress</h3>
+            <span className="task-count">{tasks.filter(t => t.status === 'in_progress').length}</span>
+          </div>
+          <div className="column-content">
+            {tasks.filter(task => task.status === 'in_progress').map(task => (
+              <div key={task.id} className="kanban-card in-progress">
+                <div className="card-content">
+                  <h4>{task.title}</h4>
+                  {task.description && <p>{task.description}</p>}
+                  <small className="task-date">{new Date(task.createdAt).toLocaleDateString()}</small>
+                </div>
+                <div className="card-actions">
+                  <button onClick={() => updateTaskStatus(task.id, 'completed')} className="complete-btn">
+                    Complete
+                  </button>
+                  <button onClick={() => updateTaskStatus(task.id, 'pending')} className="back-btn">
+                    Back
+                  </button>
+                  <button onClick={() => deleteTask(task.id)} className="delete-btn">
+                    Delete
+                  </button>
+                </div>
+              </div>
+            ))}
+            {tasks.filter(t => t.status === 'in_progress').length === 0 && (
+              <div className="empty-column">No tasks in progress</div>
             )}
           </div>
         </div>
@@ -275,7 +302,7 @@ function App() {
                   <small className="task-date">{new Date(task.createdAt).toLocaleDateString()}</small>
                 </div>
                 <div className="card-actions">
-                  <button onClick={() => toggleStatus(task.id)} className="reopen-btn">
+                  <button onClick={() => updateTaskStatus(task.id, 'in_progress')} className="reopen-btn">
                     Reopen
                   </button>
                   <button onClick={() => deleteTask(task.id)} className="delete-btn">

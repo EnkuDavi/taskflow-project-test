@@ -112,8 +112,8 @@ h1 {
 
 .kanban-board {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 2rem;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 1.5rem;
   margin-top: 2rem;
 }
 
@@ -166,6 +166,10 @@ h1 {
   border-left: 4px solid #f59e0b;
 }
 
+.kanban-card.in-progress {
+  border-left-color: #3b82f6;
+}
+
 .kanban-card.completed {
   border-left-color: #10b981;
   opacity: 0.9;
@@ -212,6 +216,16 @@ h1 {
   transition: all 0.3s ease;
 }
 
+.progress-btn {
+  background: linear-gradient(135deg, #60a5fa, #3b82f6);
+  color: white;
+}
+
+.progress-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+}
+
 .complete-btn, .reopen-btn {
   background: linear-gradient(135deg, #34d399, #10b981);
   color: white;
@@ -220,6 +234,16 @@ h1 {
 .complete-btn:hover, .reopen-btn:hover {
   transform: translateY(-1px);
   box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+}
+
+.back-btn {
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  color: white;
+}
+
+.back-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
 }
 
 .delete-btn {

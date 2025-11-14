@@ -13,6 +13,7 @@ export const updateTaskSchema = t.Object({
   status: t.Optional(
     t.Enum({
       pending: "pending",
+      in_progress: "in_progress",
       completed: "completed",
     })
   ),
