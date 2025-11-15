@@ -34,10 +34,7 @@ export const authRoute = new Elysia({ prefix: "/auth" })
         exp: Math.floor(Date.now() / 1000) + 60 * 60, // 1 jam
       });
 
-      return {
-        success: true,
-        data: { token },
-      };
+      return success({ token })
     },
     {
       body: loginSchema,
